@@ -1,5 +1,5 @@
 {
   "name": "tribunal",
-  "version": "0.1.0",
-  "description": "Provider-relative independent code audit. Current agent arbitrates; the two other CLIs (Claude, Codex, Gemini) review in parallel using raw CLI binaries."
+  "version": "0.2.0",
+  "description": "Provider-relative independent code audit. Current agent arbitrates; other CLIs (Claude, Codex, Gemini, Grok) review in parallel using raw CLI binaries. Standard mode runs 2 auditors; --critical runs all 3 others."
 }

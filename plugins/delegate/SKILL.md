@@ -1,13 +1,13 @@
 ---
 name: delegate
-description: "Unified external AI delegation — route tasks to Codex or Gemini based on cost/quality tradeoffs. Use when user says 'delegate', 'codex review', 'ask gemini', 'second opinion', or needs external model."
+description: "Unified external AI delegation — route tasks to Codex, Gemini, or Grok based on cost/quality tradeoffs. Use when user says 'delegate', 'codex review', 'ask gemini', 'ask grok', 'second opinion', or needs external model."
 ---
 
 # Delegate — Unified External AI Delegation
 
-Route tasks to the best external AI tool: **Codex CLI** or **Gemini CLI** via their native binaries.
+Route tasks to the best external AI tool: **Codex CLI**, **Gemini CLI**, or **Grok CLI** via their native binaries.
 
-Prerequisites: `codex` and `gemini` already installed and authenticated locally.
+Prerequisites: `codex`, `gemini`, and `grok` already installed and authenticated locally.
 
 ---
 
@@ -31,10 +31,14 @@ Prerequisites: `codex` and `gemini` already installed and authenticated locally.
 | File review (>200 lines) | Gemini | `cat FILE \| gemini -p` | — |
 | Documentation / summary | Gemini | `gemini -p` | — |
 | Rust code review | Codex | `codex exec` | high |
+| Quick second opinion (free) | Grok | `grok -p` | — |
+| Web-aware code question | Grok | `grok -p` | — |
+| Third independent opinion | Grok | `grok -p` | — |
 
-**When multiple tools fit:** prefer cheapest → Gemini (free tier) > Codex (paid).
+**When multiple tools fit:** prefer cheapest → Gemini (free tier) / Grok (free, grok.com) > Codex (paid).
 **When quality matters most:** GPT-5.4 (xhigh) > Codex 5.3 (xhigh) > Gemini 3.1 Pro.
 **Rust-specific:** Codex is best for ownership, lifetimes, concurrency reasoning.
+**Grok niche:** free via grok.com, agentic, **built-in web search** (Codex has none) — good for web-aware questions and a cheap third opinion.
 
 ---
 
@@ -146,7 +150,47 @@ cat src/auth.py | gemini -p "Review for security issues" -m gemini-3-flash-previ
 
 ---
 
-## 3. Model Selection Guide
+## 3. Grok CLI
+
+Agentic coding CLI (xAI), free via grok.com login. Full tool use and **built-in web search** — the only CLI here with native web access. Best as a fast free third opinion or for web-aware questions.
+
+### Headless mode
+
+```bash
+# Read-only (review / second opinion — no shell, edit, or web)
+grok -p "PROMPT" --tools "read_file,grep,list_dir" --output-format plain
+
+# Web-aware task (web_search / web_fetch on by default)
+grok -p "PROMPT" --output-format plain
+
+# JSON output for parsing
+grok -p "PROMPT" --output-format json
+```
+
+**Flags reference:**
+- `-p "PROMPT"` — **required for headless** (alias `--single`)
+- `-m MODEL` — `grok-build` (default) or `grok-composer-2.5-fast`
+- `--tools "read_file,grep,list_dir"` — allowlist; keeps the run read-only
+- `--disallowed-tools "..."` — denylist (e.g. `run_terminal_cmd,search_replace,web_search,web_fetch`)
+- `--allow RULE` / `--deny RULE` — `ToolPrefix(glob)` permission gates (e.g. `--deny "Bash(rm*)"`)
+- `--output-format plain|json|streaming-json` — `plain` default
+- `--always-approve` — auto-approve tool executions (write tasks)
+- `-s ID` / `-r ID` / `-c` — named session / resume / continue
+
+**⛔ No `--effort`** — `grok-build` rejects `reasoningEffort` with HTTP 400; the model has no effort knob.
+
+**Models:**
+
+| Model | Use for |
+|-------|---------|
+| `grok-build` | **Default** — agentic coding, review, second opinion |
+| `grok-composer-2.5-fast` | Lighter / faster tasks |
+
+**Grok prompt style:** accepts structured prompts like Codex. Keep a `Before executing: restate the goal…` line. For review / second-opinion always pass `--tools "read_file,grep,list_dir"` to prevent edits, shell, and web. Single grok.com account — `grok models` checks login; `grok login` is interactive.
+
+---
+
+## 4. Model Selection Guide
 
 GPT-5.3 Codex and Opus 4.6 have converged in capability. GPT-5.4 stands apart for deep work.
 
@@ -175,9 +219,11 @@ GPT-5.3 Codex and Opus 4.6 have converged in capability. GPT-5.4 stands apart fo
 
 ---
 
-## 4. Error Handling
+## 5. Error Handling
 
 - Codex timeout (>60s) — retry with lower `-c model_reasoning_effort=...`
 - Codex auth issues — run `codex login` (or your install's documented login flow)
 - Gemini fails — try without `-e none`, or different model
 - Gemini opens browser OAuth in headless — stop and ask user to authenticate first
+- Grok `400 … does not support parameter reasoningEffort` — remove `--effort` (grok-build has no effort knob)
+- Grok asks to log in / hangs on OAuth — run `grok login`, then retry

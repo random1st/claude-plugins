@@ -9,12 +9,12 @@
     {
       "name": "tribunal",
       "source": "./plugins/tribunal",
-      "description": "Independent code review by two other AI CLIs. Whichever CLI you are running stays as the arbiter; the two others (any combo of Claude, Codex, Gemini) audit the code in parallel and you read both verdicts before deciding. Use for pre-merge reviews, security-critical code, and changes you don't want to ship alone."
+      "description": "Independent code review by other AI CLIs. Whichever CLI you are running stays as the arbiter; the others (any combo of Claude, Codex, Gemini, Grok) audit the code in parallel and you read every verdict before deciding. Standard mode runs two auditors; --critical runs all three others. Use for pre-merge reviews, security-critical code, and changes you don't want to ship alone."
     },
     {
       "name": "delegate",
       "source": "./plugins/delegate",
-      "description": "Routing matrix for sending work to another AI CLI. Tells you which model and which reasoning effort to use for each task — code review, architecture analysis, whole-project scans, quick documentation. Uses raw codex exec and gemini binaries; no wrapper required."
+      "description": "Routing matrix for sending work to another AI CLI. Tells you which model and which reasoning effort to use for each task — code review, architecture analysis, whole-project scans, quick documentation, web-aware questions. Uses raw codex exec, gemini, and grok -p binaries; no wrapper required."
     },
     {
       "name": "fpf",
