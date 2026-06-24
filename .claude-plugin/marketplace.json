@@ -4,12 +4,17 @@
     "name": "Roman Voronin",
     "email": "voroninr@gmail.com"
   },
-  "description": "Reasoning discipline for AI agents — cross-model audit, cross-CLI routing, a reasoning baseline that builds its own modular FPF corpus from upstream, and an evidence-before-claim verification gate. Four plugins that turn a single AI session into a calibrated one.",
+  "description": "Reasoning discipline for AI agents — cross-model audit, a deeper two-round debate audit, cross-CLI routing, a reasoning baseline that builds its own modular FPF corpus from upstream, and an evidence-before-claim verification gate. Five plugins that turn a single AI session into a calibrated one.",
   "plugins": [
     {
       "name": "tribunal",
       "source": "./plugins/tribunal",
       "description": "Independent code review by other AI CLIs. Whichever CLI you are running stays as the arbiter; the others (any combo of Claude, Codex, Gemini, Grok) audit the code in parallel and you read every verdict before deciding. Standard mode runs two auditors; --critical runs all three others. Use for pre-merge reviews, security-critical code, and changes you don't want to ship alone."
+    },
+    {
+      "name": "conclave",
+      "source": "./plugins/conclave",
+      "description": "Two-round debate audit — the deep sibling of tribunal. All other CLIs (Claude, Codex, Gemini, Grok) audit independently at max effort, then each re-judges after seeing every round-1 verdict; the arbiter synthesizes all of it. A closing GPT-5.5 historian scores each model and appends the run to a history log so you can track which models audit best over time. For the hardest security/architecture/pre-prod calls where one pass isn't enough."
     },
     {
       "name": "delegate",

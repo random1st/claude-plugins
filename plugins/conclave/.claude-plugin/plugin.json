@@ -1,0 +1,5 @@
+{
+  "name": "conclave",
+  "version": "0.1.0",
+  "description": "Two-round debate audit across the other AI CLIs (Claude, Codex, Gemini, Grok). Round 1 independent at max effort; round 2 each re-judges seeing all round-1 verdicts; the arbiter synthesizes. A GPT-5.5 historian scores each model and logs the run. The deep sibling of tribunal."
+}

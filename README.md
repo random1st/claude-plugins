@@ -2,9 +2,9 @@
 
 Personal Claude Code plugin marketplace — `random1st/groundwork`.
 
-Four plugins that turn a single AI session into a calibrated one — independent multi-model audit, cross-CLI delegation, a reasoning baseline, and an evidence-before-claim verification gate. Plus a project-agnostic `AGENTS.md` template that documents the discipline behind them.
+Five plugins that turn a single AI session into a calibrated one — independent multi-model audit, a deeper two-round debate audit, cross-CLI delegation, a reasoning baseline, and an evidence-before-claim verification gate. Plus a project-agnostic `AGENTS.md` template that documents the discipline behind them.
 
-No coupling to any personal runtime. Each plugin uses raw CLIs (`claude`, `codex`, `gemini`) or standard Claude Code conventions.
+No coupling to any personal runtime. Each plugin uses raw CLIs (`claude`, `codex`, `gemini`, `grok`) or standard Claude Code conventions.
 
 ## Install
 
@@ -24,6 +24,10 @@ Update later:
 ### [tribunal](plugins/tribunal/)
 
 Independent code review by two other AI CLIs. Whichever CLI you are running stays as the arbiter; the two others (any combo of Claude, Codex, Gemini) audit the code in parallel and you read both verdicts before deciding. Use for pre-merge reviews, security-critical code, and changes you don't want to ship alone.
+
+### [conclave](plugins/conclave/)
+
+The deep sibling of `tribunal` — two rounds instead of one. Every other CLI (Claude, Codex, Gemini, Grok) audits independently at max effort, then each one re-judges after reading every round-1 verdict; the arbiter synthesizes all of it. A closing GPT-5.5 historian scores each model on the run and appends one JSON line to a history log, so over time you can see which models actually audit best. For the hardest calls — auth, payments, crypto, irreversible migrations, pre-prod deploys — where a single pass isn't enough.
 
 ### [delegate](plugins/delegate/)
 
@@ -49,12 +53,13 @@ It includes the universal core (Constitution, Calibration, FPF, Protocol) plus a
 
 ## Prerequisites
 
-`tribunal` and `delegate` shell out to `codex` and `gemini` CLIs. Install and authenticate them before use:
+`tribunal`, `conclave`, and `delegate` shell out to the other providers' CLIs. Install and authenticate the ones you use before invoking:
 
 - [`codex`](https://github.com/openai/codex)
 - [`gemini`](https://github.com/google-gemini/gemini-cli)
+- `grok` (the grok.com CLI; `grok models` confirms login)
 
-`evidence-gate` is pure guidance — no external tooling needed. `fpf` ships a builder for its corpus but no external tooling beyond `python3` and `curl`.
+`conclave` additionally runs `gpt-5.5` through `codex` for its scoring historian, and reads back the log with `jq`. `evidence-gate` is pure guidance — no external tooling needed. `fpf` ships a builder for its corpus but no external tooling beyond `python3` and `curl`.
 
 ## Layout
 
@@ -64,6 +69,7 @@ It includes the universal core (Constitution, Calibration, FPF, Protocol) plus a
 │   └── marketplace.json
 ├── plugins/
 │   ├── tribunal/
+│   ├── conclave/
 │   ├── delegate/
 │   ├── fpf/
 │   └── evidence-gate/
