@@ -80,20 +80,31 @@ CODE TO REVIEW:
 [content]
 ```
 
-Launch (max effort; run in parallel when the host supports it):
+Launch each auditor through `ask` — it writes the prompt to a file (immune to ARG_MAX and shell metacharacters when the input embeds code), retries once on an empty reply, and degrades the panel cleanly instead of handing the arbiter a blank verdict. Run in parallel when the host supports it.
 
 ```bash
-claude -p --model opus --effort high --permission-mode plan --tools "" --no-session-persistence -- "R1_PROMPT"
-codex exec -c model_reasoning_effort="xhigh" --sandbox read-only --full-auto --skip-git-repo-check "R1_PROMPT"
-gemini -p "R1_PROMPT" -m gemini-3.1-pro-preview -e none -o text
-grok  -p "R1_PROMPT" --tools "read_file,grep,list_dir" --output-format plain
+PF=$(mktemp); printf '%s' "R1_PROMPT" > "$PF"
+
+ask() {  # ask LABEL -- cmd...   (prompt is the file $PF)
+  local label="$1"; shift 2; local out
+  for _ in 1 2; do
+    out="$("$@" 2>/dev/null)"
+    [ -n "${out//[$' \t\n']/}" ] && { printf '%s\n' "$out"; return 0; }   # retry once on empty
+  done
+  printf 'DEGRADED: %s returned no output\n' "$label"; return 1            # never hand back a blank verdict
+}
+
+R1_CLAUDE=$(ask claude -- claude -p --model opus --effort high --permission-mode plan --tools "" --no-session-persistence < "$PF")
+R1_CODEX=$(ask codex   -- codex exec -c model_reasoning_effort="xhigh" --sandbox read-only --full-auto --skip-git-repo-check "$(cat "$PF")" < /dev/null)
+R1_GEMINI=$(ask gemini -- gemini -p "$(cat "$PF")" -m gemini-3.1-pro-preview -e none -o text < /dev/null)
+R1_GROK=$(ask grok     -- grok -p "$(cat "$PF")" --tools "read_file,grep,list_dir" --output-format plain < /dev/null)
 ```
 
-Quirks: if Opus is unavailable, use `--model sonnet --effort high` and disclose it. Never pass `--effort` to Grok (`grok-build` rejects `reasoningEffort` with HTTP 400); keep its `--tools` read-only.
+`claude` takes the prompt on stdin (`< "$PF"`); the others get it as an argument via `$(cat "$PF")` and read `< /dev/null` so none can block on an open stdin. Quirks: if Opus is unavailable, use `--model sonnet --effort high` and disclose it. Never pass `--effort` to Grok (`grok-build` rejects `reasoningEffort` with HTTP 400); keep its `--tools` read-only.
 
 ### 5. Round 2 — cross-examination (parallel, max effort)
 
-After round 1 completes, send each auditor the **same packet**: the original code plus all round-1 verdicts, labeled `AUDITOR 1..N` — never as "the strong one" (that biases capitulation). Same launch commands, `R2_PROMPT`. Capture as `/tmp/conclave-r2-<provider>.txt`.
+After round 1 completes, send each auditor the **same packet**: the original code plus all round-1 verdicts, labeled `AUDITOR 1..N` — never as "the strong one" (that biases capitulation). Rebuild `$PF` with `R2_PROMPT` and relaunch each auditor through `ask` (same commands as round 1). Store as `R2_<PROVIDER>`.
 
 ```text
 Several independent auditors reviewed the code below. Read all of their verdicts, then render your own final judgment — agree, overturn, or extend.
