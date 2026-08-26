@@ -4,6 +4,11 @@
 # (`id-token: write`), and the notary accepts it only because this exact repository is
 # registered there. The catalog itself is signed on the publisher's machine — the key
 # never enters CI; a workflow edit alone cannot publish anything the notary would sign.
+#
+# The submission is inlined rather than done through the random1st/skilltrust action:
+# that repository is private, and GitHub only shares private actions with private
+# repositories. When it goes public, replace this step with `uses: random1st/skilltrust`
+# with `command: notarize` — and its verify step too.
 name: notarize
 
 on:
@@ -20,17 +25,28 @@ permissions:
 jobs:
   notarize:
     runs-on: ubuntu-latest
+    env:
+      NOTARY_URL: https://notary.axela.app/v1/catalogs/random1st/groundwork
+      NOTARY_AUDIENCE: skilltrust-notary
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify the catalog against this checkout
-        uses: random1st/skilltrust@main
-        with:
-          command: verify
-          public-key: catalog.pub
-
       - name: Submit for countersigning
-        uses: random1st/skilltrust@main
-        with:
-          command: notarize
-          notary-url: https://notary.axela.app/v1/catalogs/random1st/groundwork
+        run: |
+          set -euo pipefail
+          token=$(curl -sS \
+            -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${NOTARY_AUDIENCE}" | jq -r '.value')
+          if [ -z "${token}" ] || [ "${token}" = "null" ]; then
+            echo "::error::minting the OIDC token failed" >&2
+            exit 1
+          fi
+          status=$(curl -sS -o response.json -w '%{http_code}' \
+            -X PUT -H "Authorization: Bearer ${token}" \
+            --data-binary @catalog.dsse.json "${NOTARY_URL}")
+          if [ "${status}" != "200" ]; then
+            echo "::error::the notary answered ${status}: $(cat response.json)" >&2
+            exit 1
+          fi
+          echo "notarized: ${NOTARY_URL}"
+          jq '.signatures | length' response.json
