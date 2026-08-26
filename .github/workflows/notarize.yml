@@ -1,0 +1,36 @@
+# Publish the signed catalog to the Axela notary for countersigning.
+#
+# No stored secret: the job authenticates with the OIDC token GitHub mints for it
+# (`id-token: write`), and the notary accepts it only because this exact repository is
+# registered there. The catalog itself is signed on the publisher's machine — the key
+# never enters CI; a workflow edit alone cannot publish anything the notary would sign.
+name: notarize
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - catalog.dsse.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  notarize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify the catalog against this checkout
+        uses: random1st/skilltrust@main
+        with:
+          command: verify
+          public-key: catalog.pub
+
+      - name: Submit for countersigning
+        uses: random1st/skilltrust@main
+        with:
+          command: notarize
+          notary-url: https://notary.axela.app/v1/catalogs/random1st/groundwork

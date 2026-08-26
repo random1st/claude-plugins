@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .vscode/
 .idea/
+
+# Axela publisher key — private half never leaves this machine
+.publisher/
